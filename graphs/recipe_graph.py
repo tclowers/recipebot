@@ -28,7 +28,7 @@ tool_map = {
 }
 
 # Set up the LLM with function calling 
-llm = get_llm(temperature=TEMPERATURE)
+llm = get_llm()
 
 # Define the state for our graph
 class GraphState(TypedDict):

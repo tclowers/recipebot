@@ -19,7 +19,7 @@ class ValidateQueryRelevance(BaseTool):
         log_tool_call("validate_query_relevance", {"query": query})
         
         # Get LLM instance
-        llm = get_llm(temperature=0.0)
+        llm = get_llm()
         
         # Create messages for the LLM
         messages = [

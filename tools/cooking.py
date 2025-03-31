@@ -19,7 +19,7 @@ def extract_required_cookware(recipe: str) -> Dict[str, Any]:
     log_tool_call("extract_required_cookware", {"recipe": recipe})
     
     # Get LLM instance
-    llm = get_llm(temperature=0.0)
+    llm = get_llm()
     
     # Create messages for the LLM
     messages = [
