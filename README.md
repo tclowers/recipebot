@@ -120,6 +120,7 @@ curl -X 'POST' \
 
 ### Future Improvements
 - A front-end would greatly enhance user experience
+- More robust tool output schemas using pydantic would improve reliability
 - Add database integration for user preferences and history
 - Add support for dietary restrictions and allergies
 

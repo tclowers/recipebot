@@ -10,15 +10,3 @@ class QueryResponse(BaseModel):
     response: str = Field(..., description="The response to the user's query")
     relevant: bool = Field(..., description="Whether the query was relevant to cooking")
     debug_info: Optional[Dict[str, Any]] = Field(None, description="Debug information about processing")
-    
-class SearchResult(BaseModel):
-    """Schema for search results."""
-    title: str
-    snippet: str
-    link: str
-    
-class CookingVerification(BaseModel):
-    """Schema for cooking verification results."""
-    can_cook: bool
-    missing_tools: Optional[List[str]] = None
-    explanation: str 

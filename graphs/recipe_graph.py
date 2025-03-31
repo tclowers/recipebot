@@ -1,7 +1,6 @@
 import json
 from typing import List, Dict, Any, TypedDict
 
-from langchain.tools.render import format_tool_to_openai_function
 from langchain_core.messages import HumanMessage, AIMessage, SystemMessage, BaseMessage
 from langgraph.graph import StateGraph, START, END
 from utils.llm_utils import get_llm
@@ -11,6 +10,7 @@ from tools.validation import validate_query_relevance, validate_cookware
 from tools.search import search_recipes, search_cooking_question
 from tools.cooking import extract_required_cookware
 from utils.logging_utils import log_step, logger
+from langchain_core.utils.function_calling import convert_to_openai_function
 
 # Define all available tools
 tools = [
@@ -129,7 +129,7 @@ def search(state: GraphState) -> Dict[str, Any]:
     # Format tools for function calling
     response = llm.invoke(
         messages,
-        functions=[format_tool_to_openai_function(t) for t in available_tools]
+        functions=[convert_to_openai_function(t) for t in available_tools]
     )
     
     # Check if a function was called
@@ -194,7 +194,7 @@ def identify_tools(state: GraphState) -> Dict[str, Any]:
     # Format tool for function calling
     response = llm.invoke(
         messages,
-        functions=[format_tool_to_openai_function(extract_required_cookware)]
+        functions=[convert_to_openai_function(extract_required_cookware)]
     )
     
     # Check if a function was called
@@ -251,7 +251,7 @@ def validate_cooking(state: GraphState) -> Dict[str, Any]:
         # Format tool for function calling
         response = llm.invoke(
             messages,
-            functions=[format_tool_to_openai_function(validate_cookware)]
+            functions=[convert_to_openai_function(validate_cookware)]
         )
         
         # Check if a function was called
