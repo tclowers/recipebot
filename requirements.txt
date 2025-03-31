@@ -6,3 +6,4 @@ langchain-community>=0.0.11
 langgraph>=0.0.15
 pydantic>=2.5.2
 python-dotenv>=1.0.0
+google-search-results
