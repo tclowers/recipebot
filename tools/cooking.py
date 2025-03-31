@@ -1,4 +1,4 @@
-from typing import List, Dict, Any
+from typing import Dict, Any
 from langchain_core.tools import tool
 from utils.logging_utils import log_tool_call
 from utils.llm_utils import get_llm

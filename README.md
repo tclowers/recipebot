@@ -96,7 +96,7 @@ curl -X 'POST' \
   - **Application Load Balancer (ALB)**: For simpler deployments with basic traffic routing
 - **Secret Management**: AWS Secrets Manager for API keys and credentials (best for Prod, most
   smaller apps use environment variables on the container)
-- **Monitoring**: CloudWatch for logs and metrics
+- **Monitoring**: CloudWatch for logs and metrics (once again, best for Prod and large teams)
 
 ### Deployment Steps
 1. Create an ECR repository and push the Docker image
@@ -119,9 +119,8 @@ curl -X 'POST' \
 - Mock responses for when API integration fails
 
 ### Future Improvements
+- A front-end would greatly enhance user experience
 - Add database integration for user preferences and history
-- Implement pagination for long recipe results
-- Enhance the relevance classification with fine-tuned models
 - Add support for dietary restrictions and allergies
 
 ### Edge Cases

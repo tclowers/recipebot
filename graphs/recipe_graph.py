@@ -6,7 +6,7 @@ from langchain_core.messages import HumanMessage, AIMessage, SystemMessage, Base
 from langgraph.graph import StateGraph, START, END
 from utils.llm_utils import get_llm
 
-from config import MODEL_NAME, TEMPERATURE, AVAILABLE_COOKWARE
+from config import AVAILABLE_COOKWARE
 from tools.validation import validate_query_relevance, validate_cookware
 from tools.search import search_recipes, search_cooking_question
 from tools.cooking import extract_required_cookware

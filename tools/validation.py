@@ -4,7 +4,7 @@ from utils.logging_utils import log_tool_call
 from utils.llm_utils import get_llm
 from config import AVAILABLE_COOKWARE
 from langchain_core.messages import HumanMessage, SystemMessage
-from pydantic import BaseModel, Field
+from pydantic import BaseModel
 
 class QueryInput(BaseModel):
     query: str
