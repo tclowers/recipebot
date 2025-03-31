@@ -107,6 +107,7 @@ def search(state: GraphState) -> Dict[str, Any]:
     
     messages = state["messages"]
     debug_info = state.get("debug_info", {})
+    relevant = state.get("relevant", False)  # Preserve the relevant flag
     
     # Prepare tools for this stage
     available_tools = [
@@ -158,7 +159,8 @@ def search(state: GraphState) -> Dict[str, Any]:
         
         return {
             "messages": messages,
-            "debug_info": debug_info
+            "debug_info": debug_info,
+            "relevant": relevant  # Return the preserved relevant flag
         }
     else:
         # No tool was called, just update messages
@@ -166,7 +168,8 @@ def search(state: GraphState) -> Dict[str, Any]:
         
         return {
             "messages": messages,
-            "debug_info": debug_info
+            "debug_info": debug_info,
+            "relevant": relevant  # Return the preserved relevant flag
         }
 
 def identify_tools(state: GraphState) -> Dict[str, Any]:
@@ -175,6 +178,7 @@ def identify_tools(state: GraphState) -> Dict[str, Any]:
     
     messages = state["messages"]
     debug_info = state.get("debug_info", {})
+    relevant = state.get("relevant", False)  # Preserve the relevant flag
     
     # Ask LLM if we need to extract required tools
     response = llm.invoke(
@@ -219,7 +223,8 @@ def identify_tools(state: GraphState) -> Dict[str, Any]:
         
         return {
             "messages": messages,
-            "debug_info": debug_info
+            "debug_info": debug_info,
+            "relevant": relevant  # Return the preserved relevant flag
         }
     else:
         # No tool was called
@@ -227,7 +232,8 @@ def identify_tools(state: GraphState) -> Dict[str, Any]:
         
         return {
             "messages": messages,
-            "debug_info": debug_info
+            "debug_info": debug_info,
+            "relevant": relevant  # Return the preserved relevant flag
         }
 
 def validate_cooking(state: GraphState) -> Dict[str, Any]:
@@ -236,6 +242,7 @@ def validate_cooking(state: GraphState) -> Dict[str, Any]:
     
     messages = state["messages"]
     debug_info = state.get("debug_info", {})
+    relevant = state.get("relevant", False)  # Preserve the relevant flag
     
     required_cookware = state["debug_info"].get("tools", {}).get("required_cookware", [])
     
@@ -269,7 +276,8 @@ def validate_cooking(state: GraphState) -> Dict[str, Any]:
     
     return {
         "messages": messages,
-        "debug_info": debug_info
+        "debug_info": debug_info,
+        "relevant": relevant  # Return the preserved relevant flag
     }
 
 def respond(state: GraphState) -> Dict[str, Any]:
@@ -278,16 +286,21 @@ def respond(state: GraphState) -> Dict[str, Any]:
     
     messages = state["messages"]
     debug_info = state.get("debug_info", {})
+    relevant = state.get("relevant", False)  # Preserve the relevant flag
     
     # If we reached this node through the non-relevant path, provide a clear cooking-focused refusal
-    if state.get("relevant") is False:
+    if relevant is False:
         response = llm.invoke(
-            messages + [
-                AIMessage(
-                    content="""I am a cooking assistant that specializes in recipes, cooking techniques, and food preparation. 
-                    I cannot help with questions about cars, technology, or other non-cooking topics. 
-                    Please feel free to ask me anything about cooking, recipes, or food preparation!"""
-                )
+            [
+                SystemMessage(content=system_prompt),
+                HumanMessage(content=state["query"]),
+                AIMessage(content="""
+                This query is NOT about cooking. I must respond with:
+                
+                "I am a cooking assistant that specializes in recipes, cooking techniques, and food preparation. 
+                I cannot help with questions about cars, technology, or other non-cooking topics. 
+                Please feel free to ask me anything about cooking, recipes, or food preparation!"
+                """)
             ]
         )
     else:
@@ -305,7 +318,8 @@ def respond(state: GraphState) -> Dict[str, Any]:
     
     return {
         "messages": messages,
-        "debug_info": debug_info
+        "debug_info": debug_info,
+        "relevant": relevant  # Return the preserved relevant flag
     }
 
 # Router function for conditional transitions
@@ -365,18 +379,29 @@ async def process_query(query: str) -> Dict[str, Any]:
     }
     
     try:
-        final_result = None
+        final_state = None
         for output in recipe_graph.stream(initial_state):
-            final_result = output.get('respond', output)  # Get the 'respond' node output if available
+            final_state = output
         
-        if final_result and "messages" in final_result:
-            messages = final_result["messages"]
+        # Extract the nested state if present
+        if final_state and "respond" in final_state:
+            final_state = final_state["respond"]
+        
+        # Determine if query was relevant
+        is_relevant = False
+        if final_state and "debug_info" in final_state and "relevance_check" in final_state["debug_info"]:
+            is_relevant = final_state["debug_info"]["relevance_check"].get("relevant", False)
+        elif final_state and "relevant" in final_state:
+            is_relevant = final_state["relevant"]
+            
+        if final_state and "messages" in final_state:
+            messages = final_state["messages"]
             last_message = messages[-1] if messages else None
             
             return {
                 "response": last_message.content if hasattr(last_message, "content") else "No response generated",
-                "relevant": True,  # If we have messages from respond node, it was relevant
-                "debug_info": final_result.get("debug_info")
+                "relevant": is_relevant,
+                "debug_info": final_state.get("debug_info")
             }
         
         return {
