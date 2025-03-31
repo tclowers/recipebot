@@ -50,6 +50,7 @@ async def query_endpoint(request: QueryRequest):
         logger.exception(f"Error processing query: {str(e)}")
         raise HTTPException(status_code=500, detail=f"Error processing query: {str(e)}")
 
+# Health Check endpoint -super useful in deployments
 @app.get("/health")
 async def health_check():
     """Simple health check endpoint."""
