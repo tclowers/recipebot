@@ -1,7 +1,7 @@
 import json
 from typing import List, Dict, Any, TypedDict
 
-from langchain_core.messages import HumanMessage, AIMessage, SystemMessage, BaseMessage
+from langchain_core.messages import HumanMessage, SystemMessage, BaseMessage, FunctionMessage
 from langgraph.graph import StateGraph, START, END
 from utils.llm_utils import get_llm
 
@@ -78,8 +78,8 @@ def classify(state: GraphState) -> Dict[str, Any]:
     
     messages = [
         SystemMessage(content=system_prompt),
-        HumanMessage(content=state["query"]),
-        AIMessage(content=(
+        HumanMessage(content=(
+            f"Query: {state['query']}\n\n"
             "Is this query related to cooking, recipes, or food preparation? "
             "Respond in only one word, with RELEVANT or NOT"
         ))
@@ -118,7 +118,7 @@ def search(state: GraphState) -> Dict[str, Any]:
     # Ask LLM what tool to use or if we can skip to next step
     response = llm.invoke(
         messages + [
-            AIMessage(
+            HumanMessage(
                 content="I need to determine if I should search for information or can proceed with what I know."
             )
         ]
@@ -145,8 +145,9 @@ def search(state: GraphState) -> Dict[str, Any]:
         # Add results to messages
         messages.append(response)
         messages.append(
-            AIMessage(
-                content=f"Tool result: {json.dumps(tool_result, indent=2)}"
+            FunctionMessage(
+                content=json.dumps(tool_result, indent=2),
+                name=function_name  # Specify which tool produced this result
             )
         )
         
@@ -183,8 +184,8 @@ def identify_tools(state: GraphState) -> Dict[str, Any]:
     # Ask LLM if we need to extract required tools
     response = llm.invoke(
         messages + [
-            AIMessage(
-                content="I need to determine if I should extract required cookware for a recipe."
+            HumanMessage(
+                content="Based on the conversation so far, should we identify the required cookware for this recipe? Answer YES or NO."
             )
         ]
     )
@@ -210,8 +211,9 @@ def identify_tools(state: GraphState) -> Dict[str, Any]:
         # Add results to messages
         messages.append(response)
         messages.append(
-            AIMessage(
-                content=f"Tool result: {json.dumps(tool_result, indent=2)}"
+            FunctionMessage(
+                content=json.dumps(tool_result, indent=2),
+                name=function_name  # Specify which tool produced this result
             )
         )
         
@@ -266,8 +268,9 @@ def validate_cooking(state: GraphState) -> Dict[str, Any]:
             # Add results to messages
             messages.append(response)
             messages.append(
-                AIMessage(
-                    content=f"Tool result: {json.dumps(tool_result, indent=2)}"
+                FunctionMessage(
+                    content=json.dumps(tool_result, indent=2),
+                    name=function_name  # Specify which tool produced this result
                 )
             )
             
@@ -292,22 +295,18 @@ def respond(state: GraphState) -> Dict[str, Any]:
     if relevant is False:
         response = llm.invoke(
             [
-                SystemMessage(content=system_prompt),
-                HumanMessage(content=state["query"]),
-                AIMessage(content="""
-                This query is NOT about cooking. I must respond with:
-                
-                "I am a cooking assistant that specializes in recipes, cooking techniques, and food preparation. 
-                I cannot help with questions about cars, technology, or other non-cooking topics. 
-                Please feel free to ask me anything about cooking, recipes, or food preparation!"
-                """)
+                SystemMessage(content=f"{system_prompt}\n\nFor non-cooking queries, respond with: "
+                    '"I am a cooking assistant that specializes in recipes, cooking techniques, and food preparation. '
+                    'I cannot help with questions about cars, technology, or other non-cooking topics. '
+                    'Please feel free to ask me anything about cooking, recipes, or food preparation!"'),
+                HumanMessage(content=state["query"])
             ]
         )
     else:
         # We reached this node through the normal path, generate a detailed response
         response = llm.invoke(
             messages + [
-                AIMessage(
+                HumanMessage(
                     content="I'll now provide a detailed response to this cooking query based on all the information gathered."
                 )
             ]
